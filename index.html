@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WP Deploy QA — Checklist System</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div class="app-shell">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="logo-mark">
+        <div class="logo-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/>
+          </svg>
+        </div>
+        <div>
+          <div class="logo-text">WP Deploy QA</div>
+          <div class="logo-sub">Checklist System</div>
+        </div>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <div class="nav-label">Checklist</div>
+      <div class="nav-item active" onclick="showView('before')" id="nav-before">
+        <div class="nav-dot"></div>Before Go-Live
+      </div>
+      <div class="nav-item" onclick="showView('after')" id="nav-after">
+        <div class="nav-dot"></div>After Go-Live
+      </div>
+      <div class="nav-label">Management</div>
+      <div class="nav-item" onclick="showView('admin')" id="nav-admin">
+        <div class="nav-dot"></div>Admin Panel
+      </div>
+      <div class="nav-item" onclick="showView('history')" id="nav-history">
+        <div class="nav-dot"></div>Submission History
+      </div>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="progress-block">
+        <div class="progress-row">
+          <div class="progress-label">Overall Progress</div>
+          <div class="progress-pct" id="pct-display">0<span>%</span></div>
+        </div>
+        <div class="prog-bar"><div class="prog-fill" id="prog-fill"></div></div>
+        <div class="progress-sub-row">
+          <span id="count-display">0 of 0 checked</span>
+          <span id="phase-display">Pre-live</span>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+    <div class="topbar">
+      <div class="topbar-left">
+        <div class="phase-switcher">
+          <button class="phase-btn active" onclick="switchPhase('before')" id="phase-before">Before Go-Live</button>
+          <button class="phase-btn" onclick="switchPhase('after')" id="phase-after">After Go-Live</button>
+        </div>
+      </div>
+      <div class="topbar-right">
+        <button class="btn btn-ghost" onclick="resetAll()">Reset</button>
+        <button class="btn btn-ghost" onclick="saveDraft()">Save Draft</button>
+        <button class="btn btn-primary" onclick="openSubmitModal()">Submit Report</button>
+      </div>
+    </div>
+
+    <div class="content" id="main-content">
+
+      <!-- CHECKLIST PANEL -->
+      <div id="panel-checklist">
+
+        <div class="project-bar">
+          <div class="field-group">
+            <div class="field-label">Project Name *</div>
+            <input type="text" class="field-input" id="f-project" placeholder="e.g. Acme Corp Website">
+          </div>
+          <div class="field-group">
+            <div class="field-label">Website URL</div>
+            <input type="text" class="field-input" id="f-url" placeholder="https://example.com">
+          </div>
+          <div class="field-group">
+            <div class="field-label">Client Name</div>
+            <input type="text" class="field-input" id="f-client" placeholder="Client Full Name">
+          </div>
+          <div class="field-group">
+            <div class="field-label">Internal Team</div>
+            <input type="text" class="field-input" id="f-team" placeholder="e.g. Dev Team Alpha">
+          </div>
+          <div class="field-group">
+            <div class="field-label">Client Email *</div>
+            <input type="email" class="field-input" id="f-client-email" placeholder="client@example.com">
+          </div>
+          <div class="field-group">
+            <div class="field-label">Internal Email(s) *</div>
+            <input type="text" class="field-input" id="f-internal-email" placeholder="team@agency.com">
+          </div>
+          <div class="field-group">
+            <div class="field-label">Checked By</div>
+            <input type="text" class="field-input" id="f-checked-by" placeholder="Your Name">
+          </div>
+          <div class="field-group">
+            <div class="field-label">Date</div>
+            <input type="date" class="field-input" id="f-date">
+          </div>
+          <div class="field-group remarks-span">
+            <div class="field-label">Remarks / Notes</div>
+            <textarea class="field-input" id="f-remarks" placeholder="Any additional notes or observations..."></textarea>
+          </div>
+        </div>
+
+        <div id="sections-container"></div>
+
+        <div class="submit-panel">
+          <div class="submit-info">
+            <div class="submit-title">Ready to submit?</div>
+            <div class="submit-desc">Choose whether to send internally or include the client in the report.</div>
+          </div>
+          <div class="submit-actions">
+            <button class="btn btn-ghost" onclick="openSubmitModal('internal')">Internal Submit</button>
+            <button class="btn btn-primary" onclick="openSubmitModal('external')">Client Submit</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ADMIN PANEL -->
+      <div id="panel-admin" style="display:none;">
+        <div class="admin-section">
+          <div class="admin-section-title">⚙️ EmailJS Configuration</div>
+          <p style="font-size:13px;color:var(--text2);margin-bottom:14px;">
+            Enter your <a href="https://www.emailjs.com" target="_blank" style="color:var(--accent);">EmailJS</a> credentials. These are saved locally in your browser.
+            See <code style="font-size:11px;background:var(--bg3);padding:2px 6px;border-radius:4px;">README.md</code> for setup instructions.
+          </p>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
+            <div class="field-group">
+              <div class="field-label">Service ID</div>
+              <input type="text" class="field-input" id="cfg-service-id" placeholder="service_xxxxxxx">
+            </div>
+            <div class="field-group">
+              <div class="field-label">Public Key</div>
+              <input type="text" class="field-input" id="cfg-public-key" placeholder="your_public_key">
+            </div>
+            <div class="field-group">
+              <div class="field-label">Internal Template ID</div>
+              <input type="text" class="field-input" id="cfg-template-internal" placeholder="template_internal">
+            </div>
+            <div class="field-group">
+              <div class="field-label">External Template ID</div>
+              <input type="text" class="field-input" id="cfg-template-external" placeholder="template_external">
+            </div>
+          </div>
+          <button class="btn btn-primary" onclick="saveEmailConfig()">Save Email Config</button>
+          <span id="cfg-status" style="font-size:12px;color:var(--green);margin-left:12px;display:none;">✓ Saved</span>
+        </div>
+
+        <div class="admin-section">
+          <div class="admin-section-title">📋 Manage Checklist Items</div>
+          <div id="admin-items-list"></div>
+          <div style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap;">
+            <input type="text" class="field-input" id="new-item-text" placeholder="New checklist item..." style="flex:1;min-width:200px;">
+            <select class="field-input" id="new-item-section" style="width:200px;flex-shrink:0;"></select>
+            <button class="btn btn-primary" onclick="addCustomItem()">Add Item</button>
+          </div>
+        </div>
+
+        <div class="admin-section">
+          <div class="admin-section-title">📤 Export</div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;">
+            <button class="btn btn-ghost" onclick="exportCSV()">Export CSV</button>
+            <button class="btn btn-ghost" onclick="exportTextReport()">Export Text Report</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- HISTORY PANEL -->
+      <div id="panel-history" style="display:none;">
+        <div class="admin-section">
+          <div class="admin-section-title">📁 Submission History</div>
+          <div id="history-list"></div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<!-- SUBMIT MODAL -->
+<div class="modal-bg" id="submit-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Submit Checklist Report</div>
+      <button class="modal-close" onclick="closeModal()">×</button>
+    </div>
+    <div style="font-size:13px;color:var(--text2);margin-bottom:16px;">Select submission type, then review and send.</div>
+    <div class="submit-type-grid">
+      <div class="submit-type-card" id="type-internal" onclick="selectSubmitType('internal')">
+        <div class="submit-type-icon">🔒</div>
+        <div class="submit-type-title">Internal Only</div>
+        <div class="submit-type-desc">Email sent to internal team only. Client is not notified.</div>
+      </div>
+      <div class="submit-type-card" id="type-external" onclick="selectSubmitType('external')">
+        <div class="submit-type-icon">🌐</div>
+        <div class="submit-type-title">Client + Team</div>
+        <div class="submit-type-desc">Professional report sent to both client and internal team.</div>
+      </div>
+    </div>
+    <div style="font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--text3);font-family:var(--mono);margin-bottom:8px;">Report Preview</div>
+    <div class="report-box" id="report-preview"></div>
+    <div id="email-warning" style="display:none;font-size:12px;background:var(--amber-dim);color:var(--amber);padding:10px 14px;border-radius:8px;margin-bottom:14px;">
+      ⚠️ EmailJS is not configured. Go to Admin Panel → EmailJS Configuration to set up real email sending.
+    </div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="sendReport()" id="send-btn">
+        <span id="send-btn-text">Send Report</span>
+        <span id="send-spinner" style="display:none;">Sending...</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast">
+  <div class="toast-icon" id="toast-icon"></div>
+  <div>
+    <div class="toast-title" id="toast-title"></div>
+    <div class="toast-body" id="toast-body"></div>
+  </div>
+</div>
+
+<!-- EmailJS SDK -->
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<script src="js/data.js"></script>
+<script src="js/app.js"></script>
+<script src="js/email.js"></script>
+</body>
+</html>
