@@ -87,7 +87,7 @@ async function generatePDF() {
     doc.setTextColor(...badgeColor);
     doc.setFontSize(11);
     doc.setFont('helvetica', 'bold');
-    doc.text(`${pct === 100 ? 'COMPLETE ✓' : 'IN PROGRESS'} — ${checked}/${total} items (${pct}%)`, margin + 6, y + 11);
+    doc.text(`${pct === 100 ? 'COMPLETE' : 'IN PROGRESS'} -- ${checked}/${total} items (${pct}%)`, margin + 6, y + 11);
 
     y += 26;
 
@@ -100,13 +100,13 @@ async function generatePDF() {
 
       checkPage(20);
 
-      // Section header
+      // Section header — no emoji (jsPDF can't render them)
       doc.setFillColor(30, 35, 48);
       doc.roundedRect(margin, y, W - margin*2, 10, 2, 2, 'F');
       doc.setTextColor(79, 124, 255);
       doc.setFontSize(9);
       doc.setFont('helvetica', 'bold');
-      doc.text(`${section.icon}  ${section.label.toUpperCase()}`, margin + 4, y + 7);
+      doc.text(section.label.toUpperCase(), margin + 4, y + 7);
 
       // Section badge
       const bText = allDone ? 'COMPLETE' : `${sDone}/${allItems.length}`;
@@ -127,8 +127,9 @@ async function generatePDF() {
           doc.setFillColor(46, 204, 138);
           doc.roundedRect(margin + 1, y - 4, 5, 5, 1, 1, 'F');
           doc.setTextColor(255, 255, 255);
-          doc.setFontSize(6);
-          doc.text('✓', margin + 2.2, y - 0.5);
+          doc.setFontSize(7);
+          doc.setFont('helvetica', 'bold');
+          doc.text('v', margin + 2, y - 0.3);
         } else {
           doc.setDrawColor(74, 81, 104);
           doc.setLineWidth(0.4);
