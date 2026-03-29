@@ -362,6 +362,7 @@ body {
 .charts-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }
 
 .chart-card {
+  min-height: 280px;
   background: var(--surface); border: 1px solid var(--border);
   border-radius: 16px; padding: 20px;
   box-shadow: var(--card-shadow);
@@ -665,3 +666,6 @@ input:checked + .toggle-slider:before { transform: translateX(18px); background:
   .admin-grid { grid-template-columns: 1fr; }
   .notif-fields { grid-template-columns: 1fr; }
 }
+
+canvas { display: block; }
+#chart-sections, #chart-history { height: 220px !important; }
