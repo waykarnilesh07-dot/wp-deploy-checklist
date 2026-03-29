@@ -1,236 +1,152 @@
-# WP Deploy QA — Checklist System
+# WP Deploy QA Pro — v2.0
 
-A clean, dark-themed WordPress deployment checklist tool with **real email sending** via EmailJS.
-Built for agencies and freelancers to manage pre/post go-live QA workflows.
+Advanced WordPress Deployment Checklist System with full automation.
 
-**Live Demo** → Deploy to GitHub Pages (instructions below)
+## What's New in v2.0
 
----
-
-## Features
-
-- ✅ Before Go-Live & After Go-Live checklists (23 sections, 80+ items)
-- 📧 Real email sending — Internal only OR Client + Team
-- 📊 Live progress bar per phase
-- 💾 Auto-saves progress in browser (localStorage)
-- ➕ Add custom checklist items via Admin Panel
-- 📁 Submission history log
-- 📤 Export reports as CSV or text
-- 📱 Fully responsive (mobile/tablet/desktop)
-- 🔔 Falls back to `mailto:` if EmailJS is not configured
+| Feature | Status |
+|---|---|
+| 🌗 Dark / Light mode toggle | ✅ |
+| 🎉 Confetti on 100% completion | ✅ |
+| 📱 Mobile responsive sidebar | ✅ |
+| 📊 Dashboard with live charts | ✅ |
+| 📄 PDF report download | ✅ |
+| ✍️ Digital signature pad | ✅ |
+| 💾 Auto-save every 30 seconds | ✅ |
+| 🔐 Role-based login (Admin/QA/Dev) | ✅ |
+| 💬 Slack notifications | ✅ |
+| 📱 WhatsApp via Twilio (proxy) | ✅ |
+| ⏰ Scheduled reminders | ✅ |
+| 📧 Beautiful HTML emails | ✅ |
 
 ---
 
 ## Quick Start
 
-### 1. Clone the repo
+1. Unzip and open `index.html`
+2. Login: `admin` / `admin123`
+3. Go to Admin Panel → Configure EmailJS
+4. Start checking items!
+
+---
+
+## Login Credentials
+
+| Role | Username | Password | Access |
+|---|---|---|---|
+| Admin | admin | admin123 | Everything |
+| QA Engineer | qa | qa123 | Checklists + History |
+| Developer | dev | dev123 | Checklists only |
+
+To change passwords, edit `js/auth.js` → `USERS` object.
+
+---
+
+## Deploy to GitHub Pages
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/wp-deploy-checklist.git
-cd wp-deploy-checklist
+git init
+git add .
+git commit -m "WP QA Pro v2"
+git remote add origin https://github.com/YOUR_USERNAME/wp-deploy-checklist.git
+git push -u origin main
 ```
 
-### 2. Open locally
-
-Just open `index.html` in your browser — no build step needed.
-
-```bash
-# macOS
-open index.html
-
-# Or use VS Code Live Server extension
-```
+Then: Settings → Pages → main → Save
 
 ---
 
-## Deploy to GitHub Pages (Free Hosting)
+## EmailJS Setup
 
-1. Push to GitHub
-2. Go to **Settings → Pages**
-3. Set source: **Deploy from a branch → main → / (root)**
-4. Your URL will be: `https://YOUR_USERNAME.github.io/wp-deploy-checklist/`
+Same as v1 — see previous README. Use same Service ID, Public Key, and Template IDs.
 
 ---
 
-## Setting Up Real Email (EmailJS)
+## Slack Notifications Setup
 
-EmailJS lets you send emails directly from the browser — **no backend needed**.
-Free tier: **200 emails/month**.
+1. Go to [api.slack.com/apps](https://api.slack.com/apps)
+2. Create New App → From Scratch
+3. Add feature: **Incoming Webhooks** → Activate
+4. Click **Add New Webhook to Workspace**
+5. Choose channel → Allow
+6. Copy the Webhook URL
+7. In app: Admin Panel → Notifications → Paste webhook URL → Enable → Save
 
-### Step 1 — Create an EmailJS account
-
-Go to [https://www.emailjs.com](https://www.emailjs.com) and sign up (free).
-
----
-
-### Step 2 — Add an Email Service
-
-1. In EmailJS dashboard → **Email Services → Add New Service**
-2. Choose your email provider (Gmail, Outlook, etc.)
-3. Authorise and connect your account
-4. Note down your **Service ID** (e.g. `service_abc123`)
+Works directly from browser — no backend needed! ✅
 
 ---
 
-### Step 3 — Create Email Templates
+## WhatsApp (Twilio) Setup
 
-You need **two templates** — one for Internal, one for External.
+WhatsApp requires a server-side proxy due to CORS restrictions.
 
-Go to **Email Templates → Create New Template**
+### Option A — n8n (Free, Self-hosted)
+1. Install n8n: `npx n8n`
+2. Create workflow: Webhook → Twilio node
+3. Copy webhook URL
+4. In browser console: `localStorage.setItem('wpqa-wa-webhook', 'YOUR_N8N_URL')`
 
-#### Internal Template
+### Option B — Zapier
+1. Create Zap: Webhooks by Zapier → Twilio
+2. Copy webhook URL → set in localStorage
 
-- **To Email:** `{{to_email}}`
-- **Subject:** `[WP QA — Internal] {{project_name}} | {{phase}} | {{completion_pct}}`
-- **Body:**
-
-```
-Hi Team,
-
-Here is the internal QA report for {{project_name}}.
-
-Project  : {{project_name}}
-Website  : {{website_url}}
-Phase    : {{phase}}
-Date     : {{date}}
-Reviewed : {{checked_by}}
-Status   : {{status}} ({{completion_pct}})
-
-────────────────────────────────────
-FULL CHECKLIST REPORT:
-────────────────────────────────────
-{{report_body}}
-
-Remarks: {{remarks}}
-
-This is an internal report only.
-```
-
-Note the **Template ID** (e.g. `template_internal123`)
+### Twilio Setup
+1. Sign up at [twilio.com](https://twilio.com)
+2. Activate WhatsApp Sandbox
+3. Get Account SID, Auth Token, From Number
+4. Enter in Admin Panel → Notifications
 
 ---
 
-#### External Template (Client-facing)
+## PDF Report
 
-- **To Email:** `{{to_email}}`
-- **CC:** `{{cc_email}}`
-- **Reply To:** `{{reply_to}}`
-- **Subject:** `[WP Delivery] {{project_name}} — Go-Live QA Report ({{completion_pct}} Complete)`
-- **Body:**
-
-```
-Dear {{client_name}},
-
-Please find below the QA report for your website.
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-PROJECT DETAILS
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Project  : {{project_name}}
-Website  : {{website_url}}
-Phase    : {{phase}}
-Date     : {{date}}
-Reviewed : {{checked_by}}
-Team     : {{team_name}}
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-COMPLETION STATUS : {{status}}
-Items Completed   : {{checked_count}} / {{total_count}} ({{completion_pct}})
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-CHECKLIST SUMMARY:
-
-{{report_body}}
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-REMARKS: {{remarks}}
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-If you have any questions, please reply to this email.
-
-Regards,
-{{team_name}}
-```
-
-Note the **Template ID** (e.g. `template_external456`)
+Click **⬇ PDF** in the topbar anytime. Includes:
+- Project details table
+- Completion status badge
+- Full checklist with ✓/✗ marks
+- Digital signature (if signed)
+- Page numbers
 
 ---
 
-### Step 4 — Get your Public Key
+## Auto-save
 
-In EmailJS dashboard → **Account → General** → copy your **Public Key**
-
----
-
-### Step 5 — Enter credentials in the app
-
-1. Open the app → click **Admin Panel** in the sidebar
-2. Scroll to **EmailJS Configuration**
-3. Enter:
-   - Service ID
-   - Public Key
-   - Internal Template ID
-   - External Template ID
-4. Click **Save Email Config**
-
-Done! Emails will now send for real.
+Progress saves automatically every 30 seconds. You'll see a green "Auto-saving" indicator in the topbar. Data is stored in browser localStorage.
 
 ---
 
-## Template Variables Reference
+## Scheduled Reminders
 
-| Variable | Description |
-|---|---|
-| `{{project_name}}` | Project Name field |
-| `{{website_url}}` | Website URL field |
-| `{{client_name}}` | Client Name field |
-| `{{team_name}}` | Internal Team field |
-| `{{checked_by}}` | Checked By field |
-| `{{date}}` | Date field |
-| `{{phase}}` | BEFORE GO-LIVE or AFTER GO-LIVE |
-| `{{completion_pct}}` | e.g. 87% |
-| `{{checked_count}}` | Number of checked items |
-| `{{total_count}}` | Total items |
-| `{{status}}` | COMPLETE ✓ or PENDING |
-| `{{remarks}}` | Notes/remarks field |
-| `{{report_body}}` | Full checklist report text |
-| `{{to_email}}` | Primary recipient email |
-| `{{cc_email}}` | CC email (external mode) |
-| `{{reply_to}}` | Reply-to email |
-| `{{submission_type}}` | Internal or Client + Team |
+1. Admin Panel → Notifications → Scheduled Reminders
+2. Set hours (e.g. 24)
+3. Enter reminder email
+4. Enable toggle → Save
 
----
-
-## Fallback (No EmailJS)
-
-If EmailJS is not configured, clicking **Send** opens your system email client
-(`mailto:`) pre-filled with the full report. This works without any setup.
+The app checks every minute and shows a reminder toast if checklist is incomplete after the set time.
 
 ---
 
 ## Project Structure
 
 ```
-wp-deploy-checklist/
-├── index.html          ← Main app
+wp-qa-v2/
+├── index.html
 ├── css/
-│   └── style.css       ← All styles
+│   └── style.css
 ├── js/
-│   ├── data.js         ← Checklist items (edit to customise)
-│   ├── app.js          ← Core app logic
-│   └── email.js        ← EmailJS integration
+│   ├── data.js          ← Checklist items
+│   ├── auth.js          ← Login & roles
+│   ├── app.js           ← Core logic + autosave + confetti
+│   ├── dashboard.js     ← Charts & stats
+│   ├── email.js         ← EmailJS sending
+│   ├── pdf.js           ← PDF generation
+│   ├── signature.js     ← Digital signature pad
+│   └── notifications.js ← Slack + WhatsApp
 └── README.md
 ```
 
 ---
 
-## Customising Checklist Items
-
-Edit `js/data.js` to add, remove, or rename default checklist items.
-You can also add items at runtime via **Admin Panel → Manage Checklist Items**.
-
----
-
 ## License
 
-MIT — free to use, modify, and deploy.
+MIT — Free to use and modify.
