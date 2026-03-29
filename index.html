@@ -1,121 +1,249 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>WP Deploy QA — Checklist System</title>
-<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
+<title>WP Deploy QA Pro</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=JetBrains+Mono:wght@300;400;500&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/style.css">
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
 <body>
 
-<div class="app-shell">
+<!-- LOGIN SCREEN -->
+<div id="login-screen" class="login-screen">
+  <div class="login-bg">
+    <div class="login-orb orb1"></div>
+    <div class="login-orb orb2"></div>
+    <div class="login-orb orb3"></div>
+  </div>
+  <div class="login-card">
+    <div class="login-logo">
+      <div class="login-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+      </div>
+      <div class="login-brand">WP Deploy QA <span>PRO</span></div>
+      <div class="login-tagline">Professional Deployment Checklist System</div>
+    </div>
+    <div class="login-form">
+      <div class="field-group">
+        <div class="field-label">Username</div>
+        <input type="text" class="field-input" id="login-user" placeholder="Enter username">
+      </div>
+      <div class="field-group">
+        <div class="field-label">Password</div>
+        <input type="password" class="field-input" id="login-pass" placeholder="Enter password">
+      </div>
+      <div class="role-select-row">
+        <div class="field-label">Login as</div>
+        <div class="role-pills">
+          <div class="role-pill active" onclick="selectRole('admin')" id="role-admin">Admin</div>
+          <div class="role-pill" onclick="selectRole('qa')" id="role-qa">QA Engineer</div>
+          <div class="role-pill" onclick="selectRole('dev')" id="role-dev">Developer</div>
+        </div>
+      </div>
+      <div class="login-error" id="login-error"></div>
+      <button class="btn btn-primary btn-full" onclick="doLogin()">Sign In →</button>
+      <div class="login-hint">Demo: admin/admin123 · qa/qa123 · dev/dev123</div>
+    </div>
+  </div>
+</div>
+
+<!-- CONFETTI CANVAS -->
+<canvas id="confetti-canvas" style="position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:9999;display:none;"></canvas>
+
+<!-- MAIN APP -->
+<div id="app" style="display:none;">
 
   <!-- SIDEBAR -->
-  <aside class="sidebar">
+  <aside class="sidebar" id="sidebar">
     <div class="sidebar-header">
       <div class="logo-mark">
         <div class="logo-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/>
-          </svg>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
         </div>
         <div>
-          <div class="logo-text">WP Deploy QA</div>
-          <div class="logo-sub">Checklist System</div>
+          <div class="logo-text">WP Deploy QA <span class="pro-badge">PRO</span></div>
+          <div class="logo-sub">v2.0 Advanced</div>
         </div>
       </div>
+      <button class="sidebar-close" onclick="toggleSidebar()">✕</button>
+    </div>
+
+    <!-- User Badge -->
+    <div class="user-badge">
+      <div class="user-avatar" id="user-avatar">A</div>
+      <div>
+        <div class="user-name" id="user-name">Admin</div>
+        <div class="user-role" id="user-role">Administrator</div>
+      </div>
+      <button class="logout-btn" onclick="doLogout()" title="Logout">⏻</button>
     </div>
 
     <nav class="sidebar-nav">
-      <div class="nav-label">Checklist</div>
-      <div class="nav-item active" onclick="showView('before')" id="nav-before">
-        <div class="nav-dot"></div>Before Go-Live
+      <div class="nav-label">Overview</div>
+      <div class="nav-item active" onclick="showView('dashboard')" id="nav-dashboard">
+        <span class="nav-icon">▦</span>Dashboard
+      </div>
+
+      <div class="nav-label">Checklists</div>
+      <div class="nav-item" onclick="showView('before')" id="nav-before">
+        <span class="nav-icon">◎</span>Before Go-Live
+        <span class="nav-count" id="nc-before">0%</span>
       </div>
       <div class="nav-item" onclick="showView('after')" id="nav-after">
-        <div class="nav-dot"></div>After Go-Live
+        <span class="nav-icon">◉</span>After Go-Live
+        <span class="nav-count" id="nc-after">0%</span>
       </div>
+
       <div class="nav-label">Management</div>
-      <div class="nav-item" onclick="showView('admin')" id="nav-admin">
-        <div class="nav-dot"></div>Admin Panel
+      <div class="nav-item" onclick="showView('admin')" id="nav-admin" data-role="admin">
+        <span class="nav-icon">⚙</span>Admin Panel
       </div>
       <div class="nav-item" onclick="showView('history')" id="nav-history">
-        <div class="nav-dot"></div>Submission History
+        <span class="nav-icon">◷</span>History
       </div>
     </nav>
 
+    <!-- Progress Block -->
     <div class="sidebar-footer">
       <div class="progress-block">
-        <div class="progress-row">
-          <div class="progress-label">Overall Progress</div>
-          <div class="progress-pct" id="pct-display">0<span>%</span></div>
+        <div class="progress-header">
+          <span class="progress-label">Overall Progress</span>
+          <span class="progress-pct" id="pct-display">0%</span>
         </div>
-        <div class="prog-bar"><div class="prog-fill" id="prog-fill"></div></div>
-        <div class="progress-sub-row">
-          <span id="count-display">0 of 0 checked</span>
-          <span id="phase-display">Pre-live</span>
+        <div class="prog-bar">
+          <div class="prog-fill" id="prog-fill"></div>
         </div>
+        <div class="progress-sub">
+          <span id="count-display">0 of 0</span>
+          <span id="autosave-indicator" class="autosave-dot">● Auto-saved</span>
+        </div>
+      </div>
+      <!-- Theme Toggle -->
+      <div class="theme-toggle" onclick="toggleTheme()">
+        <span id="theme-icon">☀</span>
+        <span id="theme-label">Light Mode</span>
       </div>
     </div>
   </aside>
 
   <!-- MAIN -->
-  <main class="main">
+  <main class="main" id="main">
+
+    <!-- TOPBAR -->
     <div class="topbar">
       <div class="topbar-left">
-        <div class="phase-switcher">
-          <button class="phase-btn active" onclick="switchPhase('before')" id="phase-before">Before Go-Live</button>
-          <button class="phase-btn" onclick="switchPhase('after')" id="phase-after">After Go-Live</button>
-        </div>
+        <button class="hamburger" onclick="toggleSidebar()">☰</button>
+        <div class="breadcrumb" id="breadcrumb">Dashboard</div>
       </div>
       <div class="topbar-right">
-        <button class="btn btn-ghost" onclick="resetAll()">Reset</button>
-        <button class="btn btn-ghost" onclick="saveDraft()">Save Draft</button>
-        <button class="btn btn-primary" onclick="openSubmitModal()">Submit Report</button>
+        <div class="autosave-badge" id="autosave-badge">
+          <span class="pulse-dot"></span> Auto-saving
+        </div>
+        <button class="btn btn-ghost" onclick="generatePDF()">⬇ PDF</button>
+        <button class="btn btn-ghost" onclick="resetAll()">↺ Reset</button>
+        <button class="btn btn-primary" onclick="openSubmitModal()">Submit Report ↗</button>
       </div>
     </div>
 
-    <div class="content" id="main-content">
+    <div class="content" id="content">
+
+      <!-- DASHBOARD PANEL -->
+      <div id="panel-dashboard">
+        <div class="dashboard-greeting">
+          <div>
+            <div class="greeting-text" id="greeting-text">Good morning! 👋</div>
+            <div class="greeting-sub">Here's your deployment QA overview</div>
+          </div>
+          <div class="dashboard-date" id="dashboard-date"></div>
+        </div>
+
+        <!-- Stat Cards -->
+        <div class="stat-grid">
+          <div class="stat-card" onclick="showView('before')">
+            <div class="stat-icon" style="background:rgba(79,124,255,0.15);color:#4f7cff;">◎</div>
+            <div class="stat-info">
+              <div class="stat-value" id="stat-before">0%</div>
+              <div class="stat-label">Before Go-Live</div>
+            </div>
+            <div class="stat-ring" id="ring-before"></div>
+          </div>
+          <div class="stat-card" onclick="showView('after')">
+            <div class="stat-icon" style="background:rgba(46,204,138,0.15);color:#2ecc8a;">◉</div>
+            <div class="stat-info">
+              <div class="stat-value" id="stat-after">0%</div>
+              <div class="stat-label">After Go-Live</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon" style="background:rgba(245,166,35,0.15);color:#f5a623;">◷</div>
+            <div class="stat-info">
+              <div class="stat-value" id="stat-submissions">0</div>
+              <div class="stat-label">Total Submissions</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon" style="background:rgba(180,103,255,0.15);color:#b467ff;">◈</div>
+            <div class="stat-info">
+              <div class="stat-value" id="stat-sections">0</div>
+              <div class="stat-label">Sections Complete</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Charts Row -->
+        <div class="charts-row">
+          <div class="chart-card">
+            <div class="chart-title">Checklist Completion by Section</div>
+            <canvas id="chart-sections" height="220"></canvas>
+          </div>
+          <div class="chart-card">
+            <div class="chart-title">Submission History</div>
+            <canvas id="chart-history" height="220"></canvas>
+          </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="quick-actions">
+          <div class="qa-title">Quick Actions</div>
+          <div class="qa-grid">
+            <button class="qa-btn" onclick="showView('before')">
+              <span>◎</span> Start Before Go-Live
+            </button>
+            <button class="qa-btn" onclick="showView('after')">
+              <span>◉</span> Start After Go-Live
+            </button>
+            <button class="qa-btn" onclick="generatePDF()">
+              <span>⬇</span> Download PDF Report
+            </button>
+            <button class="qa-btn" onclick="openSubmitModal()">
+              <span>✉</span> Submit Report
+            </button>
+          </div>
+        </div>
+      </div>
 
       <!-- CHECKLIST PANEL -->
-      <div id="panel-checklist">
-
+      <div id="panel-checklist" style="display:none;">
+        <!-- Project Bar -->
         <div class="project-bar">
-          <div class="field-group">
-            <div class="field-label">Project Name *</div>
-            <input type="text" class="field-input" id="f-project" placeholder="e.g. Acme Corp Website">
+          <div class="project-bar-header">
+            <div class="project-bar-title">Project Details</div>
+            <div class="project-bar-toggle" onclick="toggleProjectBar()">▾ Collapse</div>
           </div>
-          <div class="field-group">
-            <div class="field-label">Website URL</div>
-            <input type="text" class="field-input" id="f-url" placeholder="https://example.com">
-          </div>
-          <div class="field-group">
-            <div class="field-label">Client Name</div>
-            <input type="text" class="field-input" id="f-client" placeholder="Client Full Name">
-          </div>
-          <div class="field-group">
-            <div class="field-label">Internal Team</div>
-            <input type="text" class="field-input" id="f-team" placeholder="e.g. Dev Team Alpha">
-          </div>
-          <div class="field-group">
-            <div class="field-label">Client Email *</div>
-            <input type="email" class="field-input" id="f-client-email" placeholder="client@example.com">
-          </div>
-          <div class="field-group">
-            <div class="field-label">Internal Email(s) *</div>
-            <input type="text" class="field-input" id="f-internal-email" placeholder="team@agency.com">
-          </div>
-          <div class="field-group">
-            <div class="field-label">Checked By</div>
-            <input type="text" class="field-input" id="f-checked-by" placeholder="Your Name">
-          </div>
-          <div class="field-group">
-            <div class="field-label">Date</div>
-            <input type="date" class="field-input" id="f-date">
-          </div>
-          <div class="field-group remarks-span">
-            <div class="field-label">Remarks / Notes</div>
-            <textarea class="field-input" id="f-remarks" placeholder="Any additional notes or observations..."></textarea>
+          <div class="project-fields" id="project-fields">
+            <div class="field-group"><div class="field-label">Project Name *</div><input type="text" class="field-input" id="f-project" placeholder="e.g. Acme Corp Website" oninput="scheduleAutosave()"></div>
+            <div class="field-group"><div class="field-label">Website URL</div><input type="text" class="field-input" id="f-url" placeholder="https://example.com" oninput="scheduleAutosave()"></div>
+            <div class="field-group"><div class="field-label">Client Name</div><input type="text" class="field-input" id="f-client" placeholder="Client Full Name" oninput="scheduleAutosave()"></div>
+            <div class="field-group"><div class="field-label">Internal Team</div><input type="text" class="field-input" id="f-team" placeholder="e.g. Dev Team Alpha" oninput="scheduleAutosave()"></div>
+            <div class="field-group"><div class="field-label">Client Email *</div><input type="email" class="field-input" id="f-client-email" placeholder="client@example.com" oninput="scheduleAutosave()"></div>
+            <div class="field-group"><div class="field-label">Internal Email(s) *</div><input type="text" class="field-input" id="f-internal-email" placeholder="team@agency.com" oninput="scheduleAutosave()"></div>
+            <div class="field-group"><div class="field-label">Checked By</div><input type="text" class="field-input" id="f-checked-by" placeholder="Your Name" oninput="scheduleAutosave()"></div>
+            <div class="field-group"><div class="field-label">Date</div><input type="date" class="field-input" id="f-date"></div>
+            <div class="field-group remarks-span"><div class="field-label">Remarks / Notes</div><textarea class="field-input" id="f-remarks" placeholder="Any additional notes..." oninput="scheduleAutosave()"></textarea></div>
           </div>
         </div>
 
@@ -123,61 +251,132 @@
 
         <div class="submit-panel">
           <div class="submit-info">
-            <div class="submit-title">Ready to submit?</div>
-            <div class="submit-desc">Choose whether to send internally or include the client in the report.</div>
+            <div class="submit-title" id="submit-completion-text">0% Complete</div>
+            <div class="submit-desc">Fill all checkboxes and submit your QA report.</div>
           </div>
           <div class="submit-actions">
-            <button class="btn btn-ghost" onclick="openSubmitModal('internal')">Internal Submit</button>
-            <button class="btn btn-primary" onclick="openSubmitModal('external')">Client Submit</button>
+            <button class="btn btn-ghost" onclick="openSubmitModal('internal')">🔒 Internal</button>
+            <button class="btn btn-primary" onclick="openSubmitModal('external')">🌐 Client Submit</button>
           </div>
         </div>
       </div>
 
       <!-- ADMIN PANEL -->
       <div id="panel-admin" style="display:none;">
-        <div class="admin-section">
-          <div class="admin-section-title">⚙️ EmailJS Configuration</div>
-          <p style="font-size:13px;color:var(--text2);margin-bottom:14px;">
-            Enter your <a href="https://www.emailjs.com" target="_blank" style="color:var(--accent);">EmailJS</a> credentials. These are saved locally in your browser.
-            See <code style="font-size:11px;background:var(--bg3);padding:2px 6px;border-radius:4px;">README.md</code> for setup instructions.
-          </p>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
-            <div class="field-group">
-              <div class="field-label">Service ID</div>
-              <input type="text" class="field-input" id="cfg-service-id" placeholder="service_xxxxxxx">
-            </div>
-            <div class="field-group">
-              <div class="field-label">Public Key</div>
-              <input type="text" class="field-input" id="cfg-public-key" placeholder="your_public_key">
-            </div>
-            <div class="field-group">
-              <div class="field-label">Internal Template ID</div>
-              <input type="text" class="field-input" id="cfg-template-internal" placeholder="template_internal">
-            </div>
-            <div class="field-group">
-              <div class="field-label">External Template ID</div>
-              <input type="text" class="field-input" id="cfg-template-external" placeholder="template_external">
-            </div>
-          </div>
-          <button class="btn btn-primary" onclick="saveEmailConfig()">Save Email Config</button>
-          <span id="cfg-status" style="font-size:12px;color:var(--green);margin-left:12px;display:none;">✓ Saved</span>
+        <div class="admin-tabs">
+          <div class="admin-tab active" onclick="switchAdminTab('emailjs')" id="atab-emailjs">EmailJS Config</div>
+          <div class="admin-tab" onclick="switchAdminTab('items')" id="atab-items">Checklist Items</div>
+          <div class="admin-tab" onclick="switchAdminTab('notifications')" id="atab-notifications">Notifications</div>
+          <div class="admin-tab" onclick="switchAdminTab('export')" id="atab-export">Export</div>
         </div>
 
-        <div class="admin-section">
+        <!-- EmailJS Tab -->
+        <div class="admin-section" id="admin-emailjs">
+          <div class="admin-section-title">⚙️ EmailJS Configuration</div>
+          <div class="admin-grid">
+            <div class="field-group"><div class="field-label">Service ID</div><input type="text" class="field-input" id="cfg-service-id" placeholder="service_xxxxxxx"></div>
+            <div class="field-group"><div class="field-label">Public Key</div><input type="text" class="field-input" id="cfg-public-key" placeholder="your_public_key"></div>
+            <div class="field-group"><div class="field-label">Internal Template ID</div><input type="text" class="field-input" id="cfg-template-internal" placeholder="template_internal"></div>
+            <div class="field-group"><div class="field-label">External Template ID</div><input type="text" class="field-input" id="cfg-template-external" placeholder="template_external"></div>
+          </div>
+          <button class="btn btn-primary" onclick="saveEmailConfig()" style="margin-top:14px;">Save Config</button>
+          <span id="cfg-status" style="display:none;margin-left:12px;color:var(--green);font-size:13px;">✓ Saved!</span>
+        </div>
+
+        <!-- Notifications Tab -->
+        <div class="admin-section" id="admin-notifications" style="display:none;">
+          <div class="admin-section-title">🔔 Automation & Notifications</div>
+
+          <div class="notif-card">
+            <div class="notif-header">
+              <div class="notif-icon" style="background:rgba(37,211,102,0.15);color:#25d366;">📱</div>
+              <div>
+                <div class="notif-title">WhatsApp via Twilio</div>
+                <div class="notif-desc">Send WhatsApp message when report is submitted</div>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="wa-enabled">
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            <div class="notif-fields">
+              <div class="field-group"><div class="field-label">Twilio Account SID</div><input type="text" class="field-input" id="twilio-sid" placeholder="ACxxxxxxxxxxxxxxxx"></div>
+              <div class="field-group"><div class="field-label">Twilio Auth Token</div><input type="password" class="field-input" id="twilio-token" placeholder="your_auth_token"></div>
+              <div class="field-group"><div class="field-label">From Number (WhatsApp)</div><input type="text" class="field-input" id="twilio-from" placeholder="whatsapp:+14155238886"></div>
+              <div class="field-group"><div class="field-label">To Number</div><input type="text" class="field-input" id="twilio-to" placeholder="whatsapp:+919876543210"></div>
+            </div>
+            <div class="notif-note">⚠️ Twilio requires a backend. Use a serverless function (Netlify/Vercel) or n8n webhook. See README for setup.</div>
+          </div>
+
+          <div class="notif-card">
+            <div class="notif-header">
+              <div class="notif-icon" style="background:rgba(74,144,226,0.15);color:#4a90e2;">💬</div>
+              <div>
+                <div class="notif-title">Slack Notification</div>
+                <div class="notif-desc">Post to Slack channel when report is submitted</div>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="slack-enabled">
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            <div class="notif-fields">
+              <div class="field-group" style="grid-column:1/-1;"><div class="field-label">Slack Webhook URL</div><input type="text" class="field-input" id="slack-webhook" placeholder="https://hooks.slack.com/services/xxx/yyy/zzz"></div>
+            </div>
+            <div class="notif-note">Get webhook URL from Slack → Apps → Incoming Webhooks. Works directly from browser!</div>
+          </div>
+
+          <div class="notif-card">
+            <div class="notif-header">
+              <div class="notif-icon" style="background:rgba(245,166,35,0.15);color:#f5a623;">⏰</div>
+              <div>
+                <div class="notif-title">Scheduled Reminders</div>
+                <div class="notif-desc">Auto-remind team if checklist incomplete after X hours</div>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="reminder-enabled">
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            <div class="notif-fields">
+              <div class="field-group"><div class="field-label">Remind after (hours)</div><input type="number" class="field-input" id="reminder-hours" placeholder="24" value="24"></div>
+              <div class="field-group"><div class="field-label">Reminder Email</div><input type="text" class="field-input" id="reminder-email" placeholder="team@agency.com"></div>
+            </div>
+          </div>
+
+          <button class="btn btn-primary" onclick="saveNotifConfig()">Save Notification Settings</button>
+        </div>
+
+        <!-- Items Tab -->
+        <div class="admin-section" id="admin-items" style="display:none;">
           <div class="admin-section-title">📋 Manage Checklist Items</div>
           <div id="admin-items-list"></div>
-          <div style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap;">
-            <input type="text" class="field-input" id="new-item-text" placeholder="New checklist item..." style="flex:1;min-width:200px;">
-            <select class="field-input" id="new-item-section" style="width:200px;flex-shrink:0;"></select>
-            <button class="btn btn-primary" onclick="addCustomItem()">Add Item</button>
+          <div class="add-item-row">
+            <input type="text" class="field-input" id="new-item-text" placeholder="New checklist item..." style="flex:1;">
+            <select class="field-input" id="new-item-section" style="width:200px;"></select>
+            <button class="btn btn-primary" onclick="addCustomItem()">Add</button>
           </div>
         </div>
 
-        <div class="admin-section">
-          <div class="admin-section-title">📤 Export</div>
-          <div style="display:flex;gap:10px;flex-wrap:wrap;">
-            <button class="btn btn-ghost" onclick="exportCSV()">Export CSV</button>
-            <button class="btn btn-ghost" onclick="exportTextReport()">Export Text Report</button>
+        <!-- Export Tab -->
+        <div class="admin-section" id="admin-export" style="display:none;">
+          <div class="admin-section-title">📤 Export Reports</div>
+          <div class="export-grid">
+            <div class="export-card" onclick="generatePDF()">
+              <div class="export-icon">📄</div>
+              <div class="export-title">PDF Report</div>
+              <div class="export-desc">Full checklist as downloadable PDF</div>
+            </div>
+            <div class="export-card" onclick="exportCSV()">
+              <div class="export-icon">📊</div>
+              <div class="export-title">CSV Export</div>
+              <div class="export-desc">Submission history as spreadsheet</div>
+            </div>
+            <div class="export-card" onclick="exportTextReport()">
+              <div class="export-icon">📝</div>
+              <div class="export-title">Text Report</div>
+              <div class="export-desc">Plain text checklist report</div>
+            </div>
           </div>
         </div>
       </div>
@@ -198,32 +397,44 @@
 <div class="modal-bg" id="submit-modal">
   <div class="modal">
     <div class="modal-header">
-      <div class="modal-title">Submit Checklist Report</div>
-      <button class="modal-close" onclick="closeModal()">×</button>
+      <div class="modal-title">Submit QA Report</div>
+      <button class="modal-close" onclick="closeModal('submit-modal')">✕</button>
     </div>
-    <div style="font-size:13px;color:var(--text2);margin-bottom:16px;">Select submission type, then review and send.</div>
+
     <div class="submit-type-grid">
       <div class="submit-type-card" id="type-internal" onclick="selectSubmitType('internal')">
         <div class="submit-type-icon">🔒</div>
         <div class="submit-type-title">Internal Only</div>
-        <div class="submit-type-desc">Email sent to internal team only. Client is not notified.</div>
+        <div class="submit-type-desc">Team only, client not notified</div>
       </div>
       <div class="submit-type-card" id="type-external" onclick="selectSubmitType('external')">
         <div class="submit-type-icon">🌐</div>
         <div class="submit-type-title">Client + Team</div>
-        <div class="submit-type-desc">Professional report sent to both client and internal team.</div>
+        <div class="submit-type-desc">Professional report to both</div>
       </div>
     </div>
-    <div style="font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--text3);font-family:var(--mono);margin-bottom:8px;">Report Preview</div>
-    <div class="report-box" id="report-preview"></div>
-    <div id="email-warning" style="display:none;font-size:12px;background:var(--amber-dim);color:var(--amber);padding:10px 14px;border-radius:8px;margin-bottom:14px;">
-      ⚠️ EmailJS is not configured. Go to Admin Panel → EmailJS Configuration to set up real email sending.
+
+    <!-- Signature Pad -->
+    <div class="sig-section">
+      <div class="sig-label">Digital Signature <span style="color:var(--text3);font-weight:400;">(optional)</span></div>
+      <div class="sig-pad-wrap">
+        <canvas id="sig-canvas" class="sig-canvas"></canvas>
+        <button class="sig-clear" onclick="clearSignature()">Clear</button>
+      </div>
+      <div class="sig-hint">Sign above with your mouse or finger</div>
     </div>
-    <div style="display:flex;gap:10px;justify-content:flex-end;">
-      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+
+    <div class="report-box-label">Report Preview</div>
+    <div class="report-box" id="report-preview"></div>
+
+    <div id="email-warning" style="display:none;" class="warning-box">
+      ⚠️ EmailJS not configured. Go to Admin Panel → EmailJS Config.
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('submit-modal')">Cancel</button>
       <button class="btn btn-primary" onclick="sendReport()" id="send-btn">
         <span id="send-btn-text">Send Report</span>
-        <span id="send-spinner" style="display:none;">Sending...</span>
       </button>
     </div>
   </div>
@@ -238,10 +449,13 @@
   </div>
 </div>
 
-<!-- EmailJS SDK -->
-<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 <script src="js/data.js"></script>
+<script src="js/auth.js"></script>
 <script src="js/app.js"></script>
 <script src="js/email.js"></script>
+<script src="js/pdf.js"></script>
+<script src="js/signature.js"></script>
+<script src="js/notifications.js"></script>
+<script src="js/dashboard.js"></script>
 </body>
 </html>
