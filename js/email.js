@@ -1,69 +1,61 @@
 // ============================================================
-//  EMAIL.JS — real email sending via EmailJS SDK
-//  Docs: https://www.emailjs.com/docs/
+//  EMAIL.JS — EmailJS sending + fallback mailto
 // ============================================================
 
-/* ── SEND REPORT ── */
 async function sendReport() {
-  const project      = document.getElementById('f-project').value.trim();
-  const clientEmail  = document.getElementById('f-client-email').value.trim();
-  const internalEmail = document.getElementById('f-internal-email').value.trim();
-
-  // Validation
-  if (!project)       { showToast('⚠️', 'Missing Field', 'Please enter a Project Name.'); return; }
-  if (!internalEmail) { showToast('⚠️', 'Missing Field', 'Please enter Internal Email(s).'); return; }
-  if (selectedType === 'external' && !clientEmail) {
-    showToast('⚠️', 'Missing Field', 'Please enter the Client Email for external submission.'); return;
+  const v = getFormValues();
+  if (!v.project)       { showToast('⚠️','Missing','Please enter Project Name.'); return; }
+  if (!v.internalEmail) { showToast('⚠️','Missing','Please enter Internal Email(s).'); return; }
+  if (selectedType === 'external' && !v.clientEmail) {
+    showToast('⚠️','Missing','Please enter Client Email for external submission.'); return;
   }
 
-  // Build report data
   const report = buildPlainReport();
+  const cfg    = JSON.parse(localStorage.getItem('wpqa-emailcfg') || '{}');
+  const hasEJS = cfg.serviceId && cfg.publicKey && cfg.templateInternal && cfg.templateExternal;
 
-  // Get EmailJS config
-  const cfg = JSON.parse(localStorage.getItem('wpqa-emailcfg') || '{}');
-  const hasEmailJS = cfg.serviceId && cfg.publicKey && cfg.templateInternal && cfg.templateExternal;
-
-  // Disable button + show spinner
-  const sendBtn = document.getElementById('send-btn');
-  document.getElementById('send-btn-text').style.display    = 'none';
-  document.getElementById('send-spinner').style.display     = 'inline';
-  sendBtn.disabled = true;
+  // Disable button
+  const btn = document.getElementById('send-btn');
+  btn.disabled = true;
+  document.getElementById('send-btn-text').textContent = 'Sending...';
 
   try {
-    if (hasEmailJS) {
-      await sendViaEmailJS(cfg, report, clientEmail, internalEmail);
+    if (hasEJS) {
+      await sendViaEmailJS(cfg, report, v);
     } else {
-      // Fallback: mailto link (opens email client)
-      sendViaMailto(report, clientEmail, internalEmail);
+      sendViaMailto(report, v);
     }
 
-    // Save to history
+    // Fire Slack / WhatsApp
+    await fireNotifications(report);
+
+    // Save history
     saveSubmission(report);
-    closeModal();
+    closeModal('submit-modal');
+    updateDashboard();
+    renderHistory();
 
     const sentTo = selectedType === 'internal'
-      ? `Internal: ${internalEmail}`
-      : `Client: ${clientEmail} + Internal: ${internalEmail}`;
+      ? `Sent to: ${v.internalEmail}`
+      : `Sent to: ${v.clientEmail} + ${v.internalEmail}`;
 
-    showToast('✅', hasEmailJS ? 'Email Sent!' : 'Draft Opened', sentTo);
+    showToast('✅', hasEJS ? 'Report Sent!' : 'Email Draft Opened', sentTo);
 
   } catch (err) {
-    console.error('Email error:', err);
-    showToast('❌', 'Send Failed', err.message || 'Check EmailJS config and try again.');
+    console.error(err);
+    showToast('❌','Send Failed', err.message || 'Check EmailJS config.');
   } finally {
-    document.getElementById('send-btn-text').style.display = 'inline';
-    document.getElementById('send-spinner').style.display  = 'none';
-    sendBtn.disabled = false;
+    btn.disabled = false;
+    document.getElementById('send-btn-text').textContent =
+      selectedType === 'internal' ? 'Send to Internal Team' : 'Send to Client & Team';
   }
 }
 
-/* ── EMAILJS SEND ── */
-async function sendViaEmailJS(cfg, report, clientEmail, internalEmail) {
-  // Initialise EmailJS with public key
+async function sendViaEmailJS(cfg, report, v) {
   emailjs.init({ publicKey: cfg.publicKey });
+  const sigData = getSignatureDataURL();
 
-  const templateParams = {
-    // These variable names must match your EmailJS template
+  const params = {
     project_name:    report.project,
     website_url:     report.url,
     client_name:     report.client,
@@ -77,44 +69,21 @@ async function sendViaEmailJS(cfg, report, clientEmail, internalEmail) {
     status:          report.pct === 100 ? 'COMPLETE ✓' : 'PENDING',
     remarks:         report.remarks || 'None',
     report_body:     report.text,
-    to_email:        selectedType === 'internal' ? internalEmail : clientEmail,
-    cc_email:        selectedType === 'external' ? internalEmail : '',
-    reply_to:        internalEmail,
-    submission_type: selectedType === 'internal' ? 'Internal' : 'Client + Team'
+    to_email:        selectedType === 'internal' ? v.internalEmail : v.clientEmail,
+    cc_email:        selectedType === 'external' ? v.internalEmail : '',
+    reply_to:        v.internalEmail,
+    submission_type: selectedType === 'internal' ? 'Internal' : 'Client + Team',
+    has_signature:   sigData ? 'Yes' : 'No'
   };
 
-  const templateId = selectedType === 'internal'
-    ? cfg.templateInternal
-    : cfg.templateExternal;
-
-  const response = await emailjs.send(cfg.serviceId, templateId, templateParams);
-
-  if (response.status !== 200) {
-    throw new Error(`EmailJS responded with status ${response.status}`);
-  }
+  const templateId = selectedType === 'internal' ? cfg.templateInternal : cfg.templateExternal;
+  const res = await emailjs.send(cfg.serviceId, templateId, params);
+  if (res.status !== 200) throw new Error('EmailJS error: ' + res.status);
 }
 
-/* ── MAILTO FALLBACK ── */
-function sendViaMailto(report, clientEmail, internalEmail) {
-  const subject = `[WP QA Report] ${report.project} — ${report.phase} (${report.pct}% Complete)`;
-  const to      = selectedType === 'internal' ? internalEmail : clientEmail;
-  const cc      = selectedType === 'external' ? internalEmail : '';
-  const body    = encodeURIComponent(report.text);
-  const cc_part = cc ? `&cc=${encodeURIComponent(cc)}` : '';
-  window.location.href = `mailto:${encodeURIComponent(to)}?subject=${encodeURIComponent(subject)}${cc_part}&body=${body}`;
-}
-
-/* ── SAVE TO HISTORY ── */
-function saveSubmission(report) {
-  submitHistory.unshift({
-    id:      Date.now(),
-    project: report.project,
-    client:  report.client,
-    url:     report.url,
-    date:    new Date().toLocaleDateString('en-IN'),
-    type:    selectedType,
-    phase:   report.phase,
-    pct:     report.pct
-  });
-  saveHistory();
+function sendViaMailto(report, v) {
+  const subject = `[WP QA] ${report.project} — ${report.phase} (${report.pct}%)`;
+  const to      = selectedType === 'internal' ? v.internalEmail : v.clientEmail;
+  const cc      = selectedType === 'external' ? `&cc=${encodeURIComponent(v.internalEmail)}` : '';
+  window.location.href = `mailto:${encodeURIComponent(to)}?subject=${encodeURIComponent(subject)}${cc}&body=${encodeURIComponent(report.text)}`;
 }
